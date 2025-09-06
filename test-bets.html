@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PrimePicks - Test Bets</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-6">
+
+  <h1 class="text-2xl font-bold mb-4">⚽ Add, View & Delete Bets</h1>
+
+  <!-- Add Bet Form -->
+  <form id="betForm" class="mb-6 bg-white p-4 rounded shadow w-96">
+    <input type="text" id="match" placeholder="Match (e.g. Man Utd vs Arsenal)" 
+           class="border p-2 w-full mb-2 rounded" required>
+    <input type="text" id="prediction" placeholder="Prediction (e.g. Over 2.5)" 
+           class="border p-2 w-full mb-2 rounded" required>
+    <input type="date" id="date" class="border p-2 w-full mb-2 rounded" required>
+    <button type="submit" 
+            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded w-full">
+      ➕ Add Bet
+    </button>
+  </form>
+
+  <!-- Bets Table -->
+  <table class="table-auto border-collapse border border-gray-400 bg-white shadow w-full max-w-3xl">
+    <thead>
+      <tr class="bg-gray-200">
+        <th class="border px-4 py-2">Match</th>
+        <th class="border px-4 py-2">Prediction</th>
+        <th class="border px-4 py-2">Date</th>
+        <th class="border px-4 py-2">Action</th>
+      </tr>
+    </thead>
+    <tbody id="betsBody">
+      <tr><td colspan="4" class="text-center py-3">Loading...</td></tr>
+    </tbody>
+  </table>
+
+  <script>
+    // 🌍 API Base (local vs Render)
+    const API_BASE = window.location.hostname === "localhost"
+      ? "http://localhost:5000"
+      : "https://primepicks-backend.onrender.com";
+
+    // ➕ Add Bet
+    document.getElementById("betForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const match = document.getElementById("match").value;
+      const prediction = document.getElementById("prediction").value;
+      const date = document.getElementById("date").value;
+
+      const res = await fetch(`${API_BASE}/api/add-bet`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ match, prediction, date })
+      });
+
+      if (res.ok) {
+        const newBet = await res.json();
+        alert("✅ Bet added successfully!");
+        document.getElementById("betForm").reset();
+        addBetRow(newBet);
+      } else {
+        alert("❌ Failed to add bet");
+      }
+    });
+
+    // 📊 Load Bets
+    async function loadBets() {
+      try {
+        const res = await fetch(`${API_BASE}/api/bets`);
+        const bets = await res.json();
+        const betsBody = document.getElementById("betsBody");
+        betsBody.innerHTML = "";
+
+        bets.forEach(addBetRow);
+      } catch (err) {
+        console.error("Error loading bets", err);
+      }
+    }
+
+    // 📝 Render Bet Row
+    function addBetRow(bet) {
+      const betsBody = document.getElementById("betsBody");
+      const row = document.createElement("tr");
+      row.dataset.id = bet._id;
+      row.innerHTML = `
+        <td class="border px-4 py-2">${bet.match}</td>
+        <td class="border px-4 py-2">${bet.prediction}</td>
+        <td class="border px-4 py-2">${bet.date}</td>
+        <td class="border px-4 py-2 text-center">
+          <button onclick="deleteBet('${bet._id}')" 
+                  class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded">
+            ❌ Delete
+          </button>
+        </td>
+      `;
+      betsBody.appendChild(row);
+    }
+
+    // ❌ Delete Bet
+    async function deleteBet(id) {
+      if (!confirm("Are you sure you want to delete this bet?")) return;
+
+      const res = await fetch(`${API_BASE}/api/delete-bet/${id}`, { method: "DELETE" });
+
+      if (res.ok) {
+        alert("✅ Bet deleted");
+        document.querySelector(`tr[data-id='${id}']`).remove();
+      } else {
+        alert("❌ Failed to delete bet");
+      }
+    }
+
+    // Load bets on page load
+    document.addEventListener("DOMContentLoaded", loadBets);
+  </script>
+</body>
+</html>

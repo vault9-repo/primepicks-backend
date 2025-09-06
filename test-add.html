@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Test Add Bet</title>
+</head>
+<body style="font-family:Arial; padding:20px;">
+  <h1>🔎 Test Add Bet API</h1>
+  <form id="testForm">
+    <input type="text" id="match" placeholder="Match" required><br><br>
+    <input type="text" id="prediction" placeholder="Prediction" required><br><br>
+    <input type="date" id="date" required><br><br>
+    <button type="submit">Add Bet</button>
+  </form>
+
+  <p id="result"></p>
+
+  <script>
+    const API_BASE = "http://localhost:5000";
+
+    document.getElementById("testForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const match = document.getElementById("match").value;
+      const prediction = document.getElementById("prediction").value;
+      const date = document.getElementById("date").value;
+
+      try {
+        const res = await fetch(API_BASE + "/api/add-bet", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ match, prediction, date })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          document.getElementById("result").innerText = "✅ Bet added: " + JSON.stringify(data);
+        } else {
+          document.getElementById("result").innerText = "❌ Failed to add bet";
+        }
+      } catch (err) {
+        document.getElementById("result").innerText = "⚠️ Error: " + err;
+      }
+    });
+  </script>
+</body>
+</html>

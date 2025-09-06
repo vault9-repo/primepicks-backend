@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Test View Bets</title>
+</head>
+<body style="font-family:Arial; padding:20px;">
+  <h1>📊 Test View Bets API</h1>
+  <button id="loadBets">Load Bets</button>
+
+  <table border="1" cellpadding="8" cellspacing="0" style="margin-top:20px; border-collapse: collapse;">
+    <thead>
+      <tr style="background:#ddd;">
+        <th>Match</th>
+        <th>Prediction</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody id="betsBody">
+      <tr><td colspan="3" align="center">No bets loaded</td></tr>
+    </tbody>
+  </table>
+
+  <script>
+    const API_BASE = "http://localhost:5000";
+
+    document.getElementById("loadBets").addEventListener("click", async () => {
+      const betsBody = document.getElementById("betsBody");
+      betsBody.innerHTML = "<tr><td colspan='3' align='center'>Loading...</td></tr>";
+
+      try {
+        const res = await fetch(API_BASE + "/api/bets");
+        if (res.ok) {
+          const bets = await res.json();
+          betsBody.innerHTML = "";
+          if (bets.length === 0) {
+            betsBody.innerHTML = "<tr><td colspan='3' align='center'>No bets found</td></tr>";
+          } else {
+            bets.forEach(bet => {
+              const row = document.createElement("tr");
+              row.innerHTML = `
+                <td>${bet.match}</td>
+                <td>${bet.prediction}</td>
+                <td>${bet.date}</td>
+              `;
+              betsBody.appendChild(row);
+            });
+          }
+        } else {
+          betsBody.innerHTML = "<tr><td colspan='3' align='center'>❌ Failed to load bets</td></tr>";
+        }
+      } catch (err) {
+        betsBody.innerHTML = "<tr><td colspan='3' align='center'>⚠️ Error: " + err + "</td></tr>";
+      }
+    });
+  </script>
+</body>
+</html>
