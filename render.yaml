@@ -6,5 +6,22 @@ services:
     buildCommand: "npm install"
     startCommand: "node server.js"
     envVars:
-      - key: NODE_ENV
-        value: production
+      - key: PORT
+        value: "5000"
+      - key: MONGO_URI
+        sync: false
+      - key: PAYSTACK_SECRET
+        sync: false
+      - key: FRONTEND_URL
+        value: "https://primepicks-frontend.onrender.com"
+      - key: PAYSTACK_CALLBACK
+        value: "https://primepicks-frontend.onrender.com"
+
+  - type: static
+    name: primepicks-frontend
+    env: static
+    publishPath: frontend
+    buildCommand: ""
+    envVars:
+      - key: API_BASE
+        value: "https://primepicks-backend.onrender.com"

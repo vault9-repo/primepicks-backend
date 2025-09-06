@@ -1,3 +1,4 @@
+// backend/models/PremiumBet.js
 const mongoose = require("mongoose");
 
 const premiumBetSchema = new mongoose.Schema({
