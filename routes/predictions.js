@@ -1,14 +1,16 @@
 const express = require("express");
-const router = express.Router();
-const verifyDashboardAccess = require("../middleware/auth");
 const Prediction = require("../models/Prediction");
+const subscriptionMiddleware = require("../middleware/subscriptionMiddleware");
 
-router.get("/", verifyDashboardAccess, async (req, res) => {
+const router = express.Router();
+
+// Protect predictions with subscription check
+router.get("/", subscriptionMiddleware, async (req, res) => {
   try {
     const predictions = await Prediction.find().sort({ createdAt: -1 });
-    res.json({ success: true, predictions });
+    res.json(predictions);
   } catch (err) {
-    res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({ message: "Error fetching predictions" });
   }
 });
 
