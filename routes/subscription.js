@@ -1,38 +1,60 @@
+// routes/subscription.js
 const express = require("express");
 const router = express.Router();
-const bcrypt = require("bcryptjs");
-const User = require("../models/User");
-const { initializePayment } = require("../utils/paystack");
+const axios = require("axios");
 
-// Packages in KES
-const packages = {
-  daily: 50,
-  weekly: 300,
-  biweekly: 600,
-  monthly: 1000,
-};
-
-router.post("/subscribe", async (req, res) => {
+// Initialize Paystack subscription/payment
+router.post("/initialize", async (req, res) => {
   const { email, password, plan } = req.body;
-  if (!packages[plan]) return res.status(400).json({ message: "Invalid plan" });
 
-  const hashedPassword = await bcrypt.hash(password, 10);
-  const subscriptionEnd = new Date();
+  try {
+    // Map plans to amounts in KES
+    const plans = {
+      daily: 50,
+      weekly: 300,
+      biweekly: 600,
+      monthly: 1000,
+    };
 
-  switch (plan) {
-    case "daily": subscriptionEnd.setDate(subscriptionEnd.getDate() + 1); break;
-    case "weekly": subscriptionEnd.setDate(subscriptionEnd.getDate() + 7); break;
-    case "biweekly": subscriptionEnd.setDate(subscriptionEnd.getDate() + 14); break;
-    case "monthly": subscriptionEnd.setMonth(subscriptionEnd.getMonth() + 1); break;
+    if (!plans[plan]) {
+      return res.status(400).json({ message: "Invalid plan selected" });
+    }
+
+    const amount = plans[plan] * 100; // Paystack expects kobo/cents
+
+    // Call Paystack initialize API
+    const response = await axios.post(
+      "https://api.paystack.co/transaction/initialize",
+      {
+        email,
+        amount,
+        callback_url: "http://localhost:3000/dashboard", // change in production
+        metadata: {
+          custom_fields: [
+            {
+              display_name: "Subscription Plan",
+              variable_name: "plan",
+              value: plan,
+            },
+          ],
+        },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`, // SECRET KEY here
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    // Send Paystack checkout link back to frontend
+    return res.json({ authorization_url: response.data.data.authorization_url });
+  } catch (err) {
+    console.error("Paystack init error:", err.response?.data || err.message);
+    return res
+      .status(500)
+      .json({ message: "Payment initialization failed" });
   }
-
-  const user = new User({ email, password: hashedPassword, subscriptionEnd });
-  await user.save();
-
-  const reference = `SUB_${Date.now()}`;
-  const payment = await initializePayment(email, packages[plan] * 100, reference);
-
-  res.json({ payment_url: payment.data.authorization_url });
 });
 
 module.exports = router;

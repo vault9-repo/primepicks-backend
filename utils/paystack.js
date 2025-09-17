@@ -1,23 +1,31 @@
+// utils/paystack.js
 const axios = require("axios");
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 
-const initializePayment = async (email, amount, reference) => {
-  const data = {
-    email,
-    amount, // in kobo (KES * 100)
-    reference,
-    currency: "KES",
-    callback_url: "http://localhost:3000/payment-callback",
-  };
+async function initializePayment(email, amount, reference, callback_url) {
+  try {
+    const data = { email, amount, reference, callback_url, currency: "KES" };
+    const res = await axios.post("https://api.paystack.co/transaction/initialize", data, {
+      headers: {
+        Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
+        "Content-Type": "application/json",
+      },
+    });
+    return res.data; // contains data.authorization_url & reference
+  } catch (err) {
+    throw err;
+  }
+}
 
-  const res = await axios.post("https://api.paystack.co/transaction/initialize", data, {
-    headers: {
-      Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
-      "Content-Type": "application/json",
-    },
-  });
+async function verifyPayment(reference) {
+  try {
+    const res = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
+      headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` },
+    });
+    return res.data; // contains data.status etc
+  } catch (err) {
+    throw err;
+  }
+}
 
-  return res.data;
-};
-
-module.exports = { initializePayment };
+module.exports = { initializePayment, verifyPayment };
