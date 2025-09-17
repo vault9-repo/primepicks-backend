@@ -1,31 +1,38 @@
-// utils/paystack.js
 const axios = require("axios");
+
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 
-async function initializePayment(email, amount, reference, callback_url) {
+/**
+ * Initialize a Paystack payment
+ * @param {string} email - Customer email
+ * @param {number} amount - Amount in kobo
+ * @param {string} reference - Unique payment reference
+ * @param {string} callback_url - Optional callback URL
+ * @returns {Promise<object>} - Paystack response
+ */
+const initializePayment = async (email, amount, reference, callback_url) => {
   try {
-    const data = { email, amount, reference, callback_url, currency: "KES" };
-    const res = await axios.post("https://api.paystack.co/transaction/initialize", data, {
+    const payload = {
+      email,
+      amount, // in kobo
+      reference,
+      currency: "KES",
+      callback_url: callback_url || undefined,
+    };
+
+    const response = await axios.post("https://api.paystack.co/transaction/initialize", payload, {
       headers: {
         Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
         "Content-Type": "application/json",
       },
     });
-    return res.data; // contains data.authorization_url & reference
-  } catch (err) {
-    throw err;
-  }
-}
 
-async function verifyPayment(reference) {
-  try {
-    const res = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
-      headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` },
-    });
-    return res.data; // contains data.status etc
-  } catch (err) {
-    throw err;
+    // Paystack returns payment info in response.data
+    return response.data;
+  } catch (error) {
+    console.error("Paystack initialization error:", error.response?.data || error.message);
+    throw new Error("Failed to initialize payment");
   }
-}
+};
 
-module.exports = { initializePayment, verifyPayment };
+module.exports = { initializePayment };
