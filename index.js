@@ -15,6 +15,8 @@ app.use(express.json());
 // Routes
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/subscription", require("./routes/subscription"));
+app.use("/api/dashboard", require("./routes/dashboard"));
+app.use("/api/dashboard/predictions", require("./routes/predictions"));
 
 // MongoDB connection
 const mongoURI = process.env.MONGO_URI;

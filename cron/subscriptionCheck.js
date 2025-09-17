@@ -1,9 +1,16 @@
 const cron = require("node-cron");
 const User = require("../models/User");
 
-// Runs every day at midnight
-cron.schedule("0 0 * * *", async () => {
-  const now = new Date();
-  const result = await User.deleteMany({ subscriptionEnd: { $lte: now } });
-  console.log(`Deleted ${result.deletedCount} expired users`);
+// Runs every hour to expire subscriptions
+cron.schedule("0 * * * *", async () => {
+  try {
+    const now = new Date();
+    await User.updateMany(
+      { subscriptionEnd: { $lte: now } },
+      { $set: { subscription: null, subscriptionEnd: null } }
+    );
+    console.log("Expired subscriptions cleared");
+  } catch (err) {
+    console.error("Error clearing subscriptions:", err);
+  }
 });
